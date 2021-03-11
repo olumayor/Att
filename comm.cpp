@@ -17,6 +17,7 @@ comm::comm(QObject *parent)
     radio->setChannel(5); // data transmission channel (from 0 to 125), 5 - at a frequency of 2.405 GHz
     radio->setPALevel(RF24_PA_MAX); // signal gain level (RF24_PA_MIN = -18dBm, RF24_PA_LOW = -12dBm, RF24_PA_HIGH = -6dBm, RF24_PA_MAX = 0dBm)
     radio->setDataRate(RF24_1MBPS); // data transfer rate (RF24_250KBPS, RF24_1MBPS, RF24_2MBPS), RF24_1MBPS - 1Mbps
+    radio->openWritingPipe(0x7878787878LL);
     radio->openReadingPipe(1, 0x7878787879LL); // open the pipe with the address 0x7878787878LL to receive data (there can be pipes 0 - 5 in total)
 
     radio->enableAckPayload(); // we allow to place user data in the acknowledgment packet
@@ -38,12 +39,69 @@ void comm :: run()
         
             payloadSize = radio->getDynamicPayloadSize(); // get the size of the received payload
             char payload[payloadSize];
-            QString receivedData;
-
             // We read the received data into the payload array specifying the size of this array in bytes
             radio->read(&payload, payloadSize);
 
-            receivedData = QString::fromLocal8Bit(payload, payloadSize);
+            if(!dataOn)
+            {
+                QString strdData;
+                strData = QString::fromLocal8Bit(payload, payloadSize);
+                if(strdData.contains("ST%") && strdData.contains("%ED"))
+                {
+                    QStringList x = strdData.split("%");
+                    if(x.length() == 3)
+                    {
+                        int ln = QString(x.at(1)).toInt();
+                        if(ln > 0)
+                        {
+                            //New data in
+                            dataSize = ln;
+                            dataOn = true;
+                            recvd = 0;
+
+                            emit setMessage("Receiving data: " + dataSize);
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            if(dataOn && recvd < dataSize)
+            {
+                //convert payload to QByteArray
+                recvd += payloadSize;
+                QByteArray ba = QByteArray::fromRawData(payload, payloadSize);
+                store.append(ba);
+                emit setMessage("Received: " + recvd);
+                continue;
+            }
+
+            if(dataOn && recvd == dataSize)
+            {
+                QString strdData;
+                strData = QString::fromLocal8Bit(payload, payloadSize);
+                if(strdData.contains("ST%") && strdData.contains("%ED"))
+                {
+                    QStringList x = strdData.split("%");
+                    if(x.length() == 3)
+                    {
+                        int ln = QString(x.at(1)).toInt();
+                        if(ln == recvd)
+                        {
+                            //New data in
+                            dataSize = 0;
+                            dataOn = false;
+                            recvd = 0;
+                            continue;
+                            emit setMessage("Done");
+                        }
+                    }
+                }
+            }
+
+
+
+
             emit setMessage(receivedData);
             if(!dataOn)
             {
@@ -64,18 +122,9 @@ void comm :: run()
                     dataOn = false;
                     emit setMessage("Data received");
                 }
-                //convert payload to QByteArray
-                QByteArray ba = QByteArray::fromRawData(payload, payloadSize);
-                store.append(ba);
             }
 
-
-            //cout << "Pipe number : " << (int) pipeNumber << " ";
-            //cout << "Payload size : " << (int) payloadSize << " ";
-            //cout << "Data: " << receivedData << endl;
-
-            char ackData[] = "Data from buffer";
-
+            char ackData[] = "DR";
             // We put data in the FIFO buffer. As soon as the packet is received, the data from the buffer
             // will be sent to this transmitter along with an acknowledgment packet of its data
             radio->writeAckPayload(0, &ackData, sizeof(ackData));

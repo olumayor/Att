@@ -13,6 +13,7 @@ private:
     uint8_t pipeNumber;
     uint8_t payloadSize;
     QByteArray store;
+    int dataSize{0}, recvd{0};
     bool dataOn{false};
 
 public:
