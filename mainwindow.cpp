@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     //setWindowFlags(Qt::FramelessWindowHint);
-    QTimer::singleShot(0, this, SLOT(showFullScreen()));
+   // QTimer::singleShot(0, this, SLOT(showFullScreen()));
 
     nrfInterface = new comm();
     connect(nrfInterface, SIGNAL(setMessage(QString)), this, SLOT(setMessage(QString)));

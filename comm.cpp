@@ -44,11 +44,11 @@ void comm :: run()
 
             if(!dataOn)
             {
-                QString strdData;
+                QString strData;
                 strData = QString::fromLocal8Bit(payload, payloadSize);
-                if(strdData.contains("ST%") && strdData.contains("%ED"))
+                if(strData.contains("ST%") && strData.contains("%ED"))
                 {
-                    QStringList x = strdData.split("%");
+                    QStringList x = strData.split("%");
                     if(x.length() == 3)
                     {
                         int ln = QString(x.at(1)).toInt();
@@ -59,7 +59,7 @@ void comm :: run()
                             dataOn = true;
                             recvd = 0;
 
-                            emit setMessage("Receiving data: " + dataSize);
+                            emit setMessage("Receiving data: " + QString::number(dataSize));
                             continue;
                         }
                     }
@@ -72,17 +72,17 @@ void comm :: run()
                 recvd += payloadSize;
                 QByteArray ba = QByteArray::fromRawData(payload, payloadSize);
                 store.append(ba);
-                emit setMessage("Received: " + recvd);
+                emit setMessage("Received: " + QString::number(recvd));
                 continue;
             }
 
             if(dataOn && recvd == dataSize)
             {
-                QString strdData;
+                QString strData;
                 strData = QString::fromLocal8Bit(payload, payloadSize);
-                if(strdData.contains("ST%") && strdData.contains("%ED"))
+                if(strData.contains("ST%") && strData.contains("%ED"))
                 {
-                    QStringList x = strdData.split("%");
+                    QStringList x = strData.split("%");
                     if(x.length() == 3)
                     {
                         int ln = QString(x.at(1)).toInt();
@@ -92,35 +92,10 @@ void comm :: run()
                             dataSize = 0;
                             dataOn = false;
                             recvd = 0;
-                            continue;
                             emit setMessage("Done");
+                            continue;
                         }
                     }
-                }
-            }
-
-
-
-
-            emit setMessage(receivedData);
-            if(!dataOn)
-            {
-                if(receivedData == "ST")
-                {
-                    store.clear();
-                    store.append("Z");
-                    dataOn = true;
-                    emit setMessage("Receiving data");
-                }
-
-            }else{
-                if(receivedData == "END")
-                {
-                    //Process store
-                    store.remove(0, 1);
-
-                    dataOn = false;
-                    emit setMessage("Data received");
                 }
             }
 
