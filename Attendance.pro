@@ -1,4 +1,6 @@
 QT       += core gui
+QT       += serialport
+QT       += sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -47,7 +49,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     res.qrc
 
-LIBS += -lrf24
+#LIBS += -lrf24
 
 DISTFILES += \
     RF24/library.json \
